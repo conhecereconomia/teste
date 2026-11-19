@@ -1,618 +1,1368 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador de Investimentos - Economia no Ensino Médio</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Simulador didático de investimentos do projeto Economia no Ensino Médio — poupança, CDB, Tesouro Selic, ações e cripto, com perfil do investidor e comparador.">
+<meta name="theme-color" content="#F7EDE2">
+<title>Simulador de Investimentos · Economia no Ensino Médio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23FFCE80' stroke='%23563E79' stroke-width='4'/%3E%3Ctext x='32' y='42' font-size='26' text-anchor='middle' fill='%23563E79' font-family='sans-serif' font-weight='bold'%3ER%24%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: #f0f4f8;
-    margin: 0;
-    padding: 20px;
-    color: #2d3748;
-  }
-  .container { max-width: 1000px; margin: 0 auto; }
-  h1 { text-align: center; color: #2b6cb0; font-size: 1.6rem; }
-  .subtitulo { text-align: center; color: #4a5568; margin-bottom: 20px; font-size: 0.95rem; }
+/* ============================================================
+   TOKENS DE DESIGN (3 camadas: primitivos -> semânticos -> componentes)
+   Direção: "papelaria didática" — fundo creme de papel, roxo profundo,
+   cantos bem arredondados, adesivos com borda branca e sombra suave.
+   ============================================================ */
+:root{
+  /* primitivos */
+  --p-cream: oklch(0.94 0.02 75);
+  --p-paper: oklch(0.985 0.008 90);
+  --p-ink: oklch(0.36 0.10 310);
+  --p-ink-soft: oklch(0.46 0.07 312);
+  --p-sage: oklch(0.68 0.05 180);
+  --p-coral-light: oklch(0.85 0.06 30);
+  --p-yellow: oklch(0.86 0.11 85);
+  --p-teal: oklch(0.62 0.08 195);
+  --p-blue: oklch(0.60 0.10 250);
+  --p-orange: oklch(0.66 0.14 55);
+  --p-coral: oklch(0.60 0.18 28);
+  --p-purple: oklch(0.52 0.11 305);
+  --p-green-dark: oklch(0.45 0.09 165);
 
-  /* ABAS */
-  .abas { display: flex; gap: 8px; margin-bottom: 20px; }
-  .aba-botao {
-    flex: 1; padding: 12px; background: #e2e8f0; color: #4a5568;
-    border: none; border-radius: 10px 10px 0 0; font-size: 1rem;
-    font-weight: bold; cursor: pointer; transition: background 0.2s;
-  }
-  .aba-botao.ativa { background: #2b6cb0; color: #fff; }
-  .aba-conteudo { display: none; }
-  .aba-conteudo.ativa { display: block; }
+  /* semânticos */
+  --bg: var(--p-cream);
+  --surface: var(--p-paper);
+  --text: var(--p-ink);
+  --text-soft: var(--p-ink-soft);
+  --accent: var(--p-teal);       /* redefinido por aba via [data-tab] */
+  --ok: var(--p-green-dark);
+  --warn: var(--p-coral);
 
-  .card {
-    background: #fff; border-radius: 12px; padding: 20px;
-    margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  .grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-  }
-  label {
-    display: block; font-weight: 600; margin-bottom: 5px;
-    font-size: 0.9rem; color: #4a5568;
-  }
-  input, select {
-    width: 100%; padding: 10px; border: 1px solid #cbd5e0;
-    border-radius: 8px; font-size: 1rem;
-  }
-  button.principal {
-    width: 100%; margin-top: 15px; padding: 12px;
-    background: #2b6cb0; color: #fff; border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s;
-  }
-  button.principal:hover { background: #2c5282; }
+  /* componentes */
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --shadow-sticker: 0 3px 0 oklch(0.36 0.10 310 / 0.9), 0 10px 24px oklch(0.36 0.10 310 / 0.14);
+  --shadow-card: 0 2px 6px oklch(0.36 0.10 310 / 0.10), 0 14px 34px oklch(0.36 0.10 310 / 0.08);
+  --font-display: "Dela Gothic One", "Manrope", sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+}
+body[data-tab="simulador"]  { --accent: var(--p-teal); }
+body[data-tab="comparador"] { --accent: var(--p-blue); }
+body[data-tab="perfil"]     { --accent: var(--p-orange); }
+body[data-tab="produtos"]   { --accent: var(--p-coral); }
 
-  /* QUESTIONÁRIO */
-  .pergunta { margin-bottom: 18px; }
-  .pergunta p { font-weight: 600; margin: 0 0 8px 0; color: #2d3748; }
-  .opcao {
-    display: block; background: #f7fafc; border: 1px solid #e2e8f0;
-    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
-    cursor: pointer; font-size: 0.95rem; transition: background 0.15s, border-color 0.15s;
-  }
-  .opcao:hover { background: #ebf8ff; }
-  .opcao input { margin-right: 8px; }
-  .opcao.selecionada { background: #ebf8ff; border-color: #2b6cb0; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font:500 16px/1.65 var(--font-body);
+  color:var(--text);
+  background:var(--bg);
+  /* textura de papel: ruído sutil em SVG sobre o creme */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.34 0 0 0 0 0.24 0 0 0 0 0.47 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)'/%3E%3C/svg%3E");
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;line-height:1.15;text-wrap:balance}
+a{color:var(--accent);font-weight:700}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+button{cursor:pointer;font-family:var(--font-body)}
+img,svg{display:block}
 
-  /* RESULTADO PERFIL */
-  .perfil-box {
-    margin-top: 18px; padding: 18px; border-radius: 12px;
-    border-left: 6px solid #2b6cb0; background: #ebf8ff;
-  }
-  .perfil-box h3 { margin: 0 0 8px 0; font-size: 1.2rem; }
-  .perfil-box p { margin: 6px 0; font-size: 0.95rem; line-height: 1.5; }
-  .badge {
-    display: inline-block; padding: 4px 10px; border-radius: 20px;
-    font-size: 0.8rem; font-weight: bold; color: #fff; margin-bottom: 8px;
-  }
-  .badge.conservador { background: #38a169; }
-  .badge.moderado    { background: #dd6b20; }
-  .badge.arrojado    { background: #c53030; }
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
 
-  /* RESULTADOS */
-  .resultados {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px; margin-top: 10px;
-  }
-  .resultado-item {
-    background: #ebf8ff; border-left: 4px solid #2b6cb0;
-    padding: 12px; border-radius: 8px;
-  }
-  .resultado-item .rotulo {
-    font-size: 0.8rem; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .resultado-item .valor {
-    font-size: 1.3rem; font-weight: bold; color: #2b6cb0; margin-top: 4px;
-  }
-  .resultado-item.destaque { background: #f0fff4; border-left-color: #38a169; }
-  .resultado-item.destaque .valor { color: #2f855a; }
-  .resultado-item.imposto { background: #fffaf0; border-left-color: #dd6b20; }
-  .resultado-item.imposto .valor { color: #c05621; }
-  canvas { max-height: 350px; }
-  .explicacao {
-    font-size: 0.85rem; color: #718096; margin-top: 12px; line-height: 1.5;
-  }
+/* ---------------- CABEÇALHO ---------------- */
+.hero{padding:40px 0 8px;text-align:center;position:relative}
+.logo-coin{
+  width:76px;height:76px;margin:0 auto 14px;
+  background:var(--p-yellow);
+  border:5px solid var(--p-paper);
+  outline:3px solid var(--p-ink);
+  border-radius:50%;
+  display:grid;place-items:center;
+  box-shadow:var(--shadow-card);
+  animation:flutua 4s ease-in-out infinite;
+}
+.logo-coin svg{width:44px;height:44px}
+.hero h1{font-size:clamp(1.7rem,4.5vw,2.9rem)}
+.hero p.sub{margin-top:10px;font-weight:700;color:var(--text-soft);font-size:clamp(0.95rem,2vw,1.1rem)}
+.badge-projeto{
+  display:inline-block;margin-top:14px;padding:7px 18px;
+  background:var(--p-coral-light);
+  border:3px solid var(--p-paper);
+  outline:2px solid var(--p-ink);
+  border-radius:999px;
+  font-weight:800;font-size:0.82rem;letter-spacing:0.04em;text-transform:uppercase;
+  transform:rotate(-1.5deg);
+  box-shadow:var(--shadow-sticker);
+}
+@keyframes flutua{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
-  /* TABELA COMPARATIVA */
-  .tabela-wrapper { overflow-x: auto; margin-top: 12px; }
-  table {
-    width: 100%; border-collapse: collapse; font-size: 0.9rem;
-  }
-  th, td {
-    padding: 10px 12px; text-align: left; border-bottom: 1px solid #e2e8f0;
-    vertical-align: top;
-  }
-  th { background: #edf2f7; color: #2d3748; font-weight: 600; white-space: nowrap; }
-  tr:hover { background: #f7fafc; }
-  .tag-vantagem { color: #2f855a; font-weight: 600; }
-  .tag-desvantagem { color: #c53030; font-weight: 600; }
+/* ---------------- NAVEGAÇÃO POR ABAS ---------------- */
+.tabs{
+  display:flex;gap:8px;justify-content:flex-start;
+  margin:26px auto 0;padding:8px;
+  background:var(--surface);
+  border-radius:999px;
+  box-shadow:var(--shadow-card);
+  overflow-x:auto;
+  max-width:max-content;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{
+  border:0;background:transparent;
+  padding:12px 20px;border-radius:999px;
+  font-weight:800;font-size:0.95rem;color:var(--text-soft);
+  white-space:nowrap;
+  transition:background-color .2s ease,color .2s ease,transform .2s ease;
+  display:flex;align-items:center;gap:8px;
+  min-height:44px;
+}
+.tab-btn svg{width:20px;height:20px}
+.tab-btn:hover{background:oklch(0.36 0.10 310 / 0.07)}
+.tab-btn[aria-selected="true"]{background:var(--accent);color:var(--p-paper)}
+.tab-btn[aria-selected="true"] svg{stroke:var(--p-paper)}
 
-  /* AVISO PÉ-DE-MEIA */
-  .pe-de-meia-box {
-    background: #fffff0; border-left: 6px solid #d69e2e;
-    padding: 16px; border-radius: 10px; margin-bottom: 18px;
-  }
-  .pe-de-meia-box strong { color: #b7791f; }
+/* ---------------- PAINÉIS ---------------- */
+.panel{display:none;padding:34px 0 60px}
+.panel.ativo{display:block}
+.panel-titulo{font-size:clamp(1.3rem,3vw,1.8rem);margin-bottom:6px}
+.panel-desc{color:var(--text-soft);max-width:65ch;margin-bottom:24px}
 
-  /* COMPARATIVO DE PRODUTOS */
-  .comparativo-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px; margin-top: 12px;
-  }
-  .comp-card {
-    background: #f7fafc; border-radius: 10px; padding: 14px;
-    border: 1px solid #e2e8f0;
-  }
-  .comp-card h4 { margin: 0 0 8px 0; font-size: 1rem; color: #2d3748; }
-  .comp-card .linha { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.85rem; }
-  .comp-card .linha span:last-child { font-weight: bold; }
-  .comp-card .destaque-comp { color: #2b6cb0; font-size: 1.1rem; font-weight: bold; margin-top: 8px; }
+/* cartões base */
+.card{
+  background:var(--surface);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-card);
+  padding:26px;
+}
+.card h3{font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.card h3 .dot{width:14px;height:14px;border-radius:50%;background:var(--accent);flex:none}
+
+/* ---------------- FORMULÁRIOS ---------------- */
+.form-grid{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:640px){.form-grid{grid-template-columns:repeat(2,1fr)}}
+.campo label{display:block;font-weight:800;font-size:0.9rem;margin-bottom:7px}
+.campo input[type="number"],.campo select{
+  width:100%;padding:13px 16px;
+  border:2.5px solid oklch(0.36 0.10 310 / 0.25);
+  border-radius:var(--radius-sm);
+  background:var(--p-paper);
+  font:700 1.05rem var(--font-body);color:var(--text);
+  transition:border-color .2s ease;
+  min-height:48px;
+}
+.campo input:focus,.campo select:focus{border-color:var(--accent);outline:none}
+.campo .dica{font-size:0.8rem;color:var(--text-soft);margin-top:5px}
+.campo-range{display:flex;align-items:center;gap:14px}
+.campo-range input[type="range"]{flex:1;accent-color:var(--accent);min-height:44px}
+.campo-range output{font:800 1.05rem var(--font-body);min-width:86px;text-align:right}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  border:0;border-radius:999px;
+  padding:14px 28px;
+  font:800 1rem var(--font-body);
+  min-height:48px;
+  transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease;
+}
+.btn:active{transform:scale(0.97)}
+.btn-primario{background:var(--p-ink);color:var(--p-paper);box-shadow:0 4px 0 oklch(0.25 0.08 310)}
+.btn-primario:hover{transform:translateY(-2px);box-shadow:0 6px 0 oklch(0.25 0.08 310)}
+.btn-acento{background:var(--accent);color:var(--p-paper);box-shadow:0 4px 0 oklch(0.36 0.10 310 / 0.35)}
+.btn-acento:hover{transform:translateY(-2px)}
+.btn-contorno{background:transparent;color:var(--text);border:2.5px solid var(--p-ink)}
+.btn-contorno:hover{background:oklch(0.36 0.10 310 / 0.07)}
+.btn-pequeno{padding:9px 18px;font-size:0.88rem;min-height:40px}
+.acoes-form{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+
+/* botão Pé-de-Meia */
+.btn-pe-de-meia{
+  background:linear-gradient(120deg,var(--p-yellow),oklch(0.90 0.12 80));
+  color:var(--p-ink);
+  border:3px solid var(--p-paper);
+  outline:2.5px solid var(--p-ink);
+  box-shadow:var(--shadow-sticker);
+  transform:rotate(-1deg);
+}
+.btn-pe-de-meia:hover{transform:rotate(0deg) translateY(-2px)}
+
+/* modo professor */
+details.professor{margin-top:22px;border-top:2px dashed oklch(0.36 0.10 310 / 0.25);padding-top:16px}
+details.professor summary{cursor:pointer;font-weight:800;font-size:0.9rem;color:var(--text-soft);min-height:44px;display:flex;align-items:center}
+.prof-grade{display:grid;gap:12px;margin-top:12px;grid-template-columns:1fr}
+@media(min-width:640px){.prof-grade{grid-template-columns:repeat(2,1fr)}}
+.prof-grade label{font-size:0.82rem;font-weight:700;display:block;margin-bottom:4px}
+.prof-grade input{width:100%;padding:9px 12px;border:2px solid oklch(0.36 0.10 310 / 0.2);border-radius:10px;font:600 0.95rem var(--font-body);min-height:44px}
+
+/* ---------------- RESULTADOS (bento) ---------------- */
+.resultados{display:none;margin-top:28px}
+.resultados.visivel{display:block}
+.bento{display:grid;gap:14px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:760px){.bento{grid-template-columns:repeat(4,1fr)}}
+.metrica{
+  background:var(--surface);border-radius:var(--radius-md);
+  padding:18px;box-shadow:var(--shadow-card);
+  transition:transform .2s ease;
+}
+.metrica:hover{transform:translateY(-3px)}
+.metrica .rotulo{font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-soft)}
+.metrica .valor{font:800 1.35rem var(--font-body);margin-top:4px}
+.metrica.destaque{grid-column:span 2;background:var(--p-ink);color:var(--p-paper)}
+.metrica.destaque .rotulo{color:oklch(0.86 0.05 310)}
+.metrica.destaque .valor{font-family:var(--font-display);font-weight:400;font-size:1.7rem}
+.metrica .valor.negativo{color:var(--warn)}
+
+.grafico-caixa{margin-top:16px;position:relative;height:320px}
+@media(max-width:600px){.grafico-caixa{height:260px}}
+
+details.tabela-mes{margin-top:16px}
+details.tabela-mes summary{cursor:pointer;font-weight:800;min-height:44px;display:flex;align-items:center;gap:8px}
+.tabela-rolagem{overflow-x:auto;margin-top:10px;border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:560px}
+th,td{padding:10px 12px;text-align:right;border-bottom:1.5px solid oklch(0.36 0.10 310 / 0.12)}
+th:first-child,td:first-child{text-align:left}
+thead th{background:oklch(0.36 0.10 310 / 0.06);font-weight:800}
+
+.formula{
+  margin-top:16px;padding:18px 22px;
+  background:var(--p-coral-light);
+  border-radius:var(--radius-md);
+  transform:rotate(-0.6deg);
+  border:3px solid var(--p-paper);
+  outline:2px solid var(--p-ink);
+  box-shadow:var(--shadow-sticker);
+}
+.formula .mat{font:400 1.15rem var(--font-display);margin-bottom:6px}
+.formula p{font-size:0.9rem}
+
+.aviso{
+  margin-top:16px;padding:16px 20px;
+  background:oklch(0.93 0.10 90);
+  border-radius:var(--radius-md);
+  font-size:0.9rem;font-weight:600;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.aviso svg{flex:none;width:22px;height:22px;margin-top:2px}
+
+/* entrada animada dos resultados */
+@keyframes sobe{from{opacity:0;transform:translateY(18px) scale(0.98)}to{opacity:1;transform:none}}
+.animar{animation:sobe .35s ease-out both}
 </style>
 </head>
-<body>
-<div class="container">
-  <h1>💰 Simulador de Investimentos</h1>
-  <p class="subtitulo">Projeto Economia no Ensino Médio — Descubra seu perfil, simule e compare!</p>
+<style>
+/* ---------------- COMPARADOR ---------------- */
+.checks-produtos{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:560px){.checks-produtos{grid-template-columns:repeat(2,1fr)}}
+.check-prod{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border-radius:var(--radius-md);
+  padding:13px 16px;box-shadow:var(--shadow-card);
+  cursor:pointer;font-weight:700;font-size:0.95rem;
+  border:2.5px solid transparent;
+  transition:border-color .18s ease,transform .18s ease;
+  min-height:52px;
+}
+.check-prod:hover{transform:translateY(-2px)}
+.check-prod:has(input:checked){border-color:var(--cor-prod,var(--accent))}
+.check-prod input{width:20px;height:20px;accent-color:var(--cor-prod,var(--accent));flex:none}
+.check-prod .bolinha{width:12px;height:12px;border-radius:50%;background:var(--cor-prod);flex:none}
 
-  <!-- ABAS -->
-  <div class="abas">
-    <button class="aba-botao ativa" onclick="trocarAba('perfil', this)">👤 Perfil do Investidor</button>
-    <button class="aba-botao" onclick="trocarAba('simulador', this)">📈 Simulador</button>
+.vencedor{
+  margin-top:16px;padding:20px 24px;
+  background:var(--p-yellow);
+  border:3px solid var(--p-paper);outline:2.5px solid var(--p-ink);
+  border-radius:var(--radius-md);
+  transform:rotate(-0.5deg);
+  box-shadow:var(--shadow-sticker);
+}
+.vencedor strong{font-family:var(--font-display);font-weight:400}
+
+/* ---------------- QUIZ / PERFIL ---------------- */
+.aviso-privacidade{
+  display:flex;gap:12px;align-items:flex-start;
+  background:oklch(0.88 0.06 195);
+  border-radius:var(--radius-md);
+  padding:16px 20px;margin-bottom:24px;
+  font-size:0.9rem;font-weight:600;
+}
+.aviso-privacidade svg{flex:none;width:24px;height:24px;margin-top:1px}
+.bloco-titulo{
+  margin:30px 0 6px;font-size:1.05rem;
+  display:flex;align-items:center;gap:12px;
+}
+.bloco-titulo .num{
+  width:34px;height:34px;flex:none;border-radius:50%;
+  background:var(--accent);color:var(--p-paper);
+  display:grid;place-items:center;
+  font:800 0.95rem var(--font-body);
+}
+.bloco-desc{color:var(--text-soft);font-size:0.9rem;margin-bottom:14px}
+
+fieldset.pergunta{
+  border:0;background:var(--surface);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-card);
+  padding:20px 22px;margin-bottom:14px;
+}
+fieldset.pergunta legend{font-weight:800;font-size:0.98rem;padding:0;margin-bottom:4px;float:left;width:100%}
+fieldset.pergunta .opcoes{display:grid;gap:8px;margin-top:12px;clear:both}
+.opcao{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 14px;border-radius:var(--radius-sm);
+  border:2px solid oklch(0.36 0.10 310 / 0.15);
+  font-weight:600;font-size:0.93rem;cursor:pointer;
+  transition:border-color .15s ease,background-color .15s ease;
+  min-height:44px;
+}
+.opcao:hover{border-color:var(--accent)}
+.opcao:has(input:checked){border-color:var(--accent);background:oklch(0.36 0.10 310 / 0.05)}
+.opcao input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+
+.resultado-perfil{display:none;margin-top:28px}
+.resultado-perfil.visivel{display:block}
+.cartao-perfil{
+  padding:28px;border-radius:var(--radius-lg);
+  color:var(--p-paper);
+  box-shadow:var(--shadow-card);
+}
+.cartao-perfil.conservador{background:var(--p-teal)}
+.cartao-perfil.moderador{background:var(--p-blue)}
+.cartao-perfil.arrojado{background:var(--p-coral)}
+.cartao-perfil .rotulo{font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;opacity:0.85}
+.cartao-perfil h3{font-size:1.7rem;margin:6px 0 10px;color:var(--p-paper)}
+.cartao-perfil p{max-width:60ch}
+.selo-perfil{
+  display:inline-block;margin-top:14px;padding:6px 16px;
+  background:var(--p-paper);color:var(--p-ink);
+  border-radius:999px;font-weight:800;font-size:0.85rem;
+  transform:rotate(-1.5deg);
+  box-shadow:0 3px 0 oklch(0.36 0.10 310 / 0.5);
+}
+.dicas{display:grid;gap:12px;margin-top:16px}
+.dica-card{
+  background:var(--surface);border-radius:var(--radius-md);
+  box-shadow:var(--shadow-card);padding:18px 20px;
+  display:flex;gap:14px;align-items:flex-start;
+}
+.dica-card .icone{
+  width:40px;height:40px;flex:none;border-radius:50%;
+  background:var(--p-yellow);
+  border:2.5px solid var(--p-ink);
+  display:grid;place-items:center;
+}
+.dica-card .icone svg{width:22px;height:22px}
+.dica-card h4{font-size:0.95rem;margin-bottom:4px}
+.dica-card p{font-size:0.9rem;color:var(--text-soft)}
+.erro-quiz{
+  display:none;margin-top:14px;padding:13px 18px;
+  background:oklch(0.90 0.09 30);border-radius:var(--radius-sm);
+  font-weight:700;font-size:0.9rem;
+}
+.erro-quiz.visivel{display:block}
+
+/* ---------------- ABA PRODUTOS ---------------- */
+.grade-produtos{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:760px){.grade-produtos{grid-template-columns:repeat(2,1fr)}}
+.card-prod{
+  background:var(--surface);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-card);padding:26px;
+  border-top:8px solid var(--cor-prod,var(--accent));
+  transition:transform .2s ease;
+}
+.card-prod:hover{transform:translateY(-4px)}
+.card-prod h3{font-size:1.15rem;margin-bottom:4px}
+.card-prod .tipo{font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-soft)}
+.card-prod .oquee{margin:12px 0;font-size:0.94rem}
+.card-prod .taxa{
+  display:inline-block;padding:5px 14px;border-radius:999px;
+  background:color-mix(in oklch,var(--cor-prod) 18%,var(--p-paper));
+  font-weight:800;font-size:0.85rem;margin-bottom:14px;
+}
+.lista-vd{list-style:none;display:grid;gap:8px;font-size:0.9rem}
+.lista-vd li{display:flex;gap:9px;align-items:flex-start}
+.lista-vd .marca{flex:none;font-weight:800;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:0.75rem;margin-top:1px}
+.lista-vd .vantagem .marca{background:oklch(0.85 0.10 160);color:var(--ok)}
+.lista-vd .cuidado .marca{background:oklch(0.90 0.09 30);color:var(--warn)}
+
+.glossario{margin-top:26px}
+.glossario details{
+  background:var(--surface);border-radius:var(--radius-md);
+  box-shadow:var(--shadow-card);padding:0;margin-bottom:10px;
+}
+.glossario summary{
+  cursor:pointer;font-weight:800;padding:16px 20px;min-height:52px;
+  display:flex;align-items:center;gap:10px;
+}
+.glossario summary::before{content:"?";width:26px;height:26px;flex:none;border-radius:50%;background:var(--accent);color:var(--p-paper);display:grid;place-items:center;font-size:0.85rem}
+.glossario details p{padding:0 20px 18px 56px;font-size:0.92rem;color:var(--text-soft)}
+
+/* ---------------- RODAPÉ ---------------- */
+footer{
+  margin-top:30px;padding:30px 0 44px;
+  border-top:2px dashed oklch(0.36 0.10 310 / 0.25);
+  font-size:0.85rem;color:var(--text-soft);
+}
+footer p{max-width:75ch}
+footer .creditos{margin-top:10px;font-weight:700}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body data-tab="simulador">
+
+<header class="hero wrap">
+  <div class="logo-coin" aria-hidden="true">
+    <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="none" stroke="#563E79" stroke-width="3.5"/><path d="M16 18h16M16 24h16M20 18v16h8a4 4 0 0 0 4-4" stroke="#563E79" stroke-width="3.5" stroke-linecap="round"/></svg>
+  </div>
+  <h1>Simulador de Investimentos</h1>
+  <p class="sub">Quanto o seu dinheiro pode render? Descubra brincando!</p>
+  <span class="badge-projeto">Projeto Economia no Ensino Médio · Itabuna/BA</span>
+</header>
+
+<nav class="tabs wrap" role="tablist" aria-label="Seções do simulador">
+  <button class="tab-btn" role="tab" id="tab-simulador" aria-selected="true" aria-controls="painel-simulador" data-tab="simulador">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2" stroke-linecap="round"><path d="M3 17l5-6 4 3 6-8 3 4"/><path d="M3 21h18"/></svg>
+    Simulador
+  </button>
+  <button class="tab-btn" role="tab" id="tab-comparador" aria-selected="false" aria-controls="painel-comparador" data-tab="comparador">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2" stroke-linecap="round"><path d="M3 20h18M6 20V10m6 10V4m6 16v-8"/></svg>
+    Comparar
+  </button>
+  <button class="tab-btn" role="tab" id="tab-perfil" aria-selected="false" aria-controls="painel-perfil" data-tab="perfil">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
+    Meu Perfil
+  </button>
+  <button class="tab-btn" role="tab" id="tab-produtos" aria-selected="false" aria-controls="painel-produtos" data-tab="produtos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2" stroke-linecap="round"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 8.7l5.4-.8z"/></svg>
+    Conheça os Produtos
+  </button>
+</nav>
+
+<main class="wrap">
+<!-- ==================== ABA 1: SIMULADOR ==================== -->
+<section class="panel ativo" id="painel-simulador" role="tabpanel" aria-labelledby="tab-simulador">
+  <h2 class="panel-titulo">Faça a sua simulação</h2>
+  <p class="panel-desc">Preencha os valores abaixo e veja quanto o seu dinheiro pode crescer com os juros compostos — os famosos "juros sobre juros".</p>
+
+  <div class="card">
+    <h3><span class="dot"></span>Quanto você quer investir?</h3>
+    <div class="form-grid">
+      <div class="campo">
+        <label for="sim-inicial">Valor inicial (R$)</label>
+        <input type="number" id="sim-inicial" min="0" step="10" value="0" inputmode="decimal">
+        <p class="dica">O dinheiro que você já tem guardado hoje.</p>
+      </div>
+      <div class="campo">
+        <label for="sim-aporte">Aporte mensal (R$)</label>
+        <input type="number" id="sim-aporte" min="0" step="10" value="200" inputmode="decimal">
+        <p class="dica">Quanto você consegue guardar todo mês.</p>
+      </div>
+      <div class="campo">
+        <label for="sim-prazo-range">Por quanto tempo? <span id="sim-prazo-txt"></span></label>
+        <div class="campo-range">
+          <input type="range" id="sim-prazo-range" min="1" max="120" value="24" aria-label="Prazo em meses">
+          <output id="sim-prazo-out" for="sim-prazo-range">24 meses</output>
+        </div>
+        <p class="dica">De 1 a 120 meses (10 anos).</p>
+      </div>
+      <div class="campo">
+        <label for="sim-produto">Onde investir?</label>
+        <select id="sim-produto">
+          <option value="poupanca">Poupança</option>
+          <option value="cdb">CDB (100% do CDI)</option>
+          <option value="tesouro" selected>Tesouro Selic</option>
+          <option value="acoes">Fundo de Ações (Ibovespa)</option>
+          <option value="cripto">Criptomoeda (Bitcoin)</option>
+        </select>
+        <p class="dica" id="sim-produto-dica"></p>
+      </div>
+    </div>
+
+    <div class="acoes-form">
+      <button class="btn btn-primario" id="btn-simular">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 3l14 9-14 9z"/></svg>
+        Simular!
+      </button>
+      <button class="btn btn-pe-de-meia" id="btn-pe-de-meia" title="Preenche com os valores do programa Pé-de-Meia">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2v20M17 6.5c0-2-2.2-3-5-3s-5 1-5 3 2 2.8 5 3.3 5 1.4 5 3.7-2.2 3.5-5 3.5-5-1.2-5-3.2"/></svg>
+        Simular com o Pé-de-Meia
+      </button>
+    </div>
+
+    <details class="professor">
+      <summary>⚙ Ajustar taxas (modo professor)</summary>
+      <p class="dica" style="margin:8px 0">Valores padrão de novembro/2026 (Selic de 13,75% a.a.). Altere conforme as taxas mudarem — os ajustes ficam salvos neste navegador.</p>
+      <div class="prof-grade" id="prof-grade"></div>
+      <div class="acoes-form">
+        <button class="btn btn-contorno btn-pequeno" id="btn-restaurar">Restaurar padrões</button>
+      </div>
+    </details>
   </div>
 
-  <!-- ============================================================
-       ABA 1 — PERFIL
-       ============================================================ -->
-  <div id="aba-perfil" class="aba-conteudo ativa">
-    <div class="card">
-      <h2 style="margin-top:0; font-size:1.1rem;">Responda às perguntas abaixo</h2>
-      <p class="explicacao" style="margin-bottom:18px;">
-        Não existe resposta certa ou errada! O objetivo é descobrir qual tipo de investimento combina com você.
-      </p>
+  <!-- resultados -->
+  <div class="resultados" id="sim-resultados" aria-live="polite">
+    <div class="bento">
+      <div class="metrica"><div class="rotulo">Total investido</div><div class="valor" id="r-investido">—</div></div>
+      <div class="metrica"><div class="rotulo">Rendimento bruto</div><div class="valor" id="r-rendimento">—</div></div>
+      <div class="metrica"><div class="rotulo">Imposto de renda</div><div class="valor" id="r-ir">—</div></div>
+      <div class="metrica" id="r-custodia-caixa" style="display:none"><div class="rotulo">Taxa de custódia (B3)</div><div class="valor" id="r-custodia">—</div></div>
+      <div class="metrica destaque"><div class="rotulo">Valor líquido final</div><div class="valor" id="r-liquido">—</div></div>
+      <div class="metrica"><div class="rotulo">Rentabilidade total</div><div class="valor" id="r-rentab">—</div></div>
+      <div class="metrica"><div class="rotulo">Alíquota de IR aplicada</div><div class="valor" id="r-aliquota">—</div></div>
+    </div>
 
-      <div class="pergunta">
-        <p>1. Se você precisasse do dinheiro, em quanto tempo usaria?</p>
-        <label class="opcao"><input type="radio" name="p1" value="1"> Em menos de 1 ano (viagem, celular novo)</label>
-        <label class="opcao"><input type="radio" name="p1" value="2"> Entre 1 e 2 anos</label>
-        <label class="opcao"><input type="radio" name="p1" value="3"> Mais de 2 anos (faculdade, carro, casa)</label>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Evolução mês a mês</h3>
+      <div class="grafico-caixa"><canvas id="grafico-sim" aria-label="Gráfico da evolução do patrimônio mês a mês"></canvas></div>
+      <details class="tabela-mes">
+        <summary>Ver a tabela mês a mês</summary>
+        <div class="tabela-rolagem">
+          <table id="tabela-sim">
+            <thead><tr><th>Mês</th><th>Total investido</th><th>Rendimento do mês</th><th>Saldo acumulado</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <div class="acoes-form" id="sim-reroll-caixa" style="display:none">
+      <button class="btn btn-acento" id="btn-reroll">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+        Simular novamente (outro cenário de mercado)
+      </button>
+    </div>
+
+    <div class="aviso" id="sim-aviso-variavel" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18.5v.01"/></svg>
+      <p><strong>Atenção:</strong> simulação didática. Na renda variável, o resultado real pode ser muito diferente — inclusive negativo. Rentabilidade passada não garante retorno futuro. Clique em "Simular novamente" e veja como cada cenário é diferente!</p>
+    </div>
+
+    <div class="formula">
+      <div class="mat">M = C × (1 + i)<sup>t</sup></div>
+      <p>Esta é a fórmula dos <strong>juros compostos</strong>: M é o montante final, C é o capital, i é a taxa e t é o tempo. No simulador, a cada mês o rendimento entra no saldo e passa a render também — é por isso que a curva do gráfico acelera com o tempo!</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ABA 2: COMPARADOR ==================== -->
+<section class="panel" id="painel-comparador" role="tabpanel" aria-labelledby="tab-comparador">
+  <h2 class="panel-titulo">Compare os produtos</h2>
+  <p class="panel-desc">Escolha dois ou mais produtos e descubra qual deles faz o seu dinheiro render mais no mesmo período. Repare no papel do imposto de renda!</p>
+
+  <div class="card">
+    <h3><span class="dot"></span>Quais produtos você quer comparar?</h3>
+    <div class="checks-produtos" id="comp-checks"></div>
+
+    <div class="form-grid" style="margin-top:20px">
+      <div class="campo">
+        <label for="comp-inicial">Valor inicial (R$)</label>
+        <input type="number" id="comp-inicial" min="0" step="10" value="0" inputmode="decimal">
       </div>
-
-      <div class="pergunta">
-        <p>2. Qual é o seu principal objetivo com esse dinheiro?</p>
-        <label class="opcao"><input type="radio" name="p2" value="1"> Reserva de emergência (imprevistos)</label>
-        <label class="opcao"><input type="radio" name="p2" value="2"> Realizar um sonho de médio prazo</label>
-        <label class="opcao"><input type="radio" name="p2" value="3"> Construir patrimônio no longo prazo</label>
+      <div class="campo">
+        <label for="comp-aporte">Aporte mensal (R$)</label>
+        <input type="number" id="comp-aporte" min="0" step="10" value="200" inputmode="decimal">
       </div>
-
-      <div class="pergunta">
-        <p>3. Se o seu investimento caísse 10% em um mês, o que você faria?</p>
-        <label class="opcao"><input type="radio" name="p3" value="1"> Resgataria tudo imediatamente, fiquei nervoso</label>
-        <label class="opcao"><input type="radio" name="p3" value="2"> Esperaria mais um pouco para ver no que dá</label>
-        <label class="opcao"><input type="radio" name="p3" value="3"> Aproveitaria para investir mais, pois foi uma oportunidade</label>
+      <div class="campo" style="grid-column:1/-1">
+        <label for="comp-prazo-range">Por quanto tempo?</label>
+        <div class="campo-range">
+          <input type="range" id="comp-prazo-range" min="1" max="120" value="24" aria-label="Prazo em meses">
+          <output id="comp-prazo-out" for="comp-prazo-range">24 meses</output>
+        </div>
       </div>
+    </div>
 
-      <div class="pergunta">
-        <p>4. Quanto você já conhece sobre investimentos?</p>
-        <label class="opcao"><input type="radio" name="p4" value="1"> Nada ou quase nada</label>
-        <label class="opcao"><input type="radio" name="p4" value="2"> Já ouvi falar em poupança, CDB e Tesouro</label>
-        <label class="opcao"><input type="radio" name="p4" value="3"> Entendo bem e já invisto ou acompanho o mercado</label>
-      </div>
-
-      <div class="pergunta">
-        <p>5. Quanto do seu dinheiro você está disposto a arriscar?</p>
-        <label class="opcao"><input type="radio" name="p5" value="1"> Nada — prefiro segurança total</label>
-        <label class="opcao"><input type="radio" name="p5" value="2"> Uma parte pequena, o resto com segurança</label>
-        <label class="opcao"><input type="radio" name="p5" value="3"> Aceito riscos maiores para ganhar mais</label>
-      </div>
-
-      <button class="principal" onclick="calcularPerfil()">Descobrir meu perfil</button>
-      <div id="resultado-perfil"></div>
+    <div class="acoes-form">
+      <button class="btn btn-primario" id="btn-comparar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 20h18M6 20V10m6 10V4m6 16v-8"/></svg>
+        Comparar!
+      </button>
+      <button class="btn btn-contorno" id="btn-comp-pe-de-meia">Usar valores do Pé-de-Meia</button>
     </div>
   </div>
 
-  <!-- ============================================================
-       ABA 2 — SIMULADOR
-       ============================================================ -->
-  <div id="aba-simulador" class="aba-conteudo">
-
-    <!-- Contexto Pé-de-Meia -->
-    <div class="card">
-      <div class="pe-de-meia-box">
-        <strong>💡 Você sabia? Programa Pé-de-Meia</strong>
-        <p style="margin:8px 0 0 0; font-size:0.9rem; line-height:1.5;">
-          Se você recebe o Pé-de-Meia, já tem dinheiro para começar a investir! O programa paga <strong>R$ 200 por mês</strong> (frequência) e <strong>R$ 1.000 ao final de cada ano aprovado</strong> — este último valor fica guardado e só pode ser sacado após concluir o ensino médio [citation:4][citation:9]. Ou seja: você já tem uma "poupança forçada" que pode render mais se investida. Use os valores abaixo para simular o que acontece com esse dinheiro!
-        </p>
-      </div>
+  <div class="resultados" id="comp-resultados" aria-live="polite">
+    <div class="card" style="margin-top:24px">
+      <h3><span class="dot"></span>Corrida do dinheiro</h3>
+      <div class="grafico-caixa"><canvas id="grafico-comp" aria-label="Gráfico comparando a evolução dos produtos mês a mês"></canvas></div>
     </div>
 
-    <!-- Formulário do simulador -->
-    <div class="card">
-      <div class="grid">
-        <div>
-          <label for="valorInicial">Valor inicial (R$)</label>
-          <input type="number" id="valorInicial" value="1000" min="0" step="100">
-        </div>
-        <div>
-          <label for="aporteMensal">Aporte mensal (R$)</label>
-          <input type="number" id="aporteMensal" value="200" min="0" step="50">
-        </div>
-        <div>
-          <label for="prazo">Prazo (meses)</label>
-          <input type="number" id="prazo" value="36" min="1" step="1">
-        </div>
-        <div>
-          <label for="produto">Produto financeiro</label>
-          <select id="produto">
-            <option value="poupanca">Poupança (0,6% a.m. — isenta de IR)</option>
-            <option value="cdb">CDB (100% do CDI — 0,9% a.m.)</option>
-            <option value="tesouro">Tesouro Selic (0,9% a.m. + taxa B3)</option>
-            <option value="fii">FIIs — Fundos Imobiliários (estimativa 0,8% a.m. + volatilidade)</option>
-            <option value="etf">ETF de Ações (estimativa 1,0% a.m. + alta volatilidade)</option>
-          </select>
-        </div>
-      </div>
-      <button class="principal" onclick="simular()">Simular investimento</button>
-      <p id="aviso-perfil" class="explicacao" style="display:none;"></p>
-    </div>
+    <div class="vencedor" id="comp-vencedor" style="display:none"></div>
 
-    <!-- Resultado individual -->
-    <div class="card">
-      <h2 style="margin-top:0; font-size:1.1rem; color:#2d3748;">Resultado da simulação</h2>
-      <div class="resultados" id="resultados"></div>
-      <p class="explicacao" id="explicacao"></p>
-    </div>
-
-    <!-- Gráfico individual -->
-    <div class="card">
-      <h2 style="margin-top:0; font-size:1.1rem; color:#2d3748;">Evolução do patrimônio mês a mês</h2>
-      <canvas id="grafico"></canvas>
-    </div>
-
-    <!-- COMPARATIVO DE TODOS OS PRODUTOS -->
-    <div class="card">
-      <h2 style="margin-top:0; font-size:1.1rem; color:#2d3748;">📊 Comparativo: todos os produtos com os mesmos valores</h2>
-      <p class="explicacao" style="margin-bottom:12px;">
-        Veja como o mesmo dinheiro se comporta em cada produto (usando os valores que você digitou acima).
-      </p>
-      <div class="comparativo-grid" id="comparativo-grid"></div>
-      <p class="explicacao" style="margin-top:12px;">
-        ⚠️ <strong>Atenção:</strong> FIIs e ETFs são produtos de <strong>renda variável</strong>. A simulação usa uma taxa média estimada, mas na vida real o valor pode subir ou cair bastante. O resultado pode ser bem diferente do simulado!
-      </p>
-    </div>
-
-    <!-- TABELA DE VANTAGENS E DESVANTAGENS -->
-    <div class="card">
-      <h2 style="margin-top:0; font-size:1.1rem; color:#2d3748;">📋 Vantagens e desvantagens de cada produto</h2>
-      <div class="tabela-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Risco</th>
-              <th>Vantagens</th>
-              <th>Desvantagens</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Poupança</strong></td>
-              <td>Muito baixo</td>
-              <td><span class="tag-vantagem">✓</span> Isenta de IR<br><span class="tag-vantagem">✓</span> Fácil de entender e resgatar<br><span class="tag-vantagem">✓</span> Garantida pelo FGC</td>
-              <td><span class="tag-desvantagem">✗</span> Rende pouco (0,6% a.m.)<br><span class="tag-desvantagem">✗</span> Pode perder para a inflação<br><span class="tag-desvantagem">✗</span> Não ideal para longo prazo</td>
-            </tr>
-            <tr>
-              <td><strong>CDB</strong></td>
-              <td>Baixo</td>
-              <td><span class="tag-vantagem">✓</span> Garantido pelo FGC (até R$ 250 mil)<br><span class="tag-vantagem">✓</span> Rende mais que a poupança<br><span class="tag-vantagem">✓</span> Diversos prazos e taxas</td>
-              <td><span class="tag-desvantagem">✗</span> Incide IR regressivo<br><span class="tag-desvantagem">✗</span> Liquidez varia conforme o título<br><span class="tag-desvantagem">✗</span> Pode ter IOF se resgatar em menos de 30 dias</td>
-            </tr>
-            <tr>
-              <td><strong>Tesouro Selic</strong></td>
-              <td>Muito baixo</td>
-              <td><span class="tag-vantagem">✓</span> O investimento mais seguro do país<br><span class="tag-vantagem">✓</span> Liquidez diária<br><span class="tag-vantagem">✓</span> Acompanha a Selic</td>
-              <td><span class="tag-desvantagem">✗</span> Incide IR regressivo<br><span class="tag-desvantagem">✗</span> Taxa de custódia da B3 (0,20% a.a.)<br><span class="tag-desvantagem">✗</span> Rende menos que produtos de risco</td>
-            </tr>
-            <tr>
-              <td><strong>FIIs</strong><br><small>(Fundos Imobiliários)</small></td>
-              <td>Médio a alto</td>
-              <td><span class="tag-vantagem">✓</span> Pode gerar renda mensal (aluguéis)<br><span class="tag-vantagem">✓</span> Isento de IR nos rendimentos mensais<br><span class="tag-vantagem">✓</span> Cotas a partir de ~R$ 10</td>
-              <td><span class="tag-desvantagem">✗</span> Valor das cotas oscila (pode cair)<br><span class="tag-desvantagem">✗</span> Não é garantido pelo FGC<br><span class="tag-desvantagem">✗</span> IR de 20% sobre ganho de capital na venda</td>
-            </tr>
-            <tr>
-              <td><strong>ETF de Ações</strong></td>
-              <td>Alto</td>
-              <td><span class="tag-vantagem">✓</span> Diversificação em várias empresas<br><span class="tag-vantagem">✓</span> Potencial de retorno maior no longo prazo<br><span class="tag-vantagem">✓</span> Taxas de administração baixas</td>
-              <td><span class="tag-desvantagem">✗</span> Alta volatilidade (pode cair muito)<br><span class="tag-desvantagem">✗</span> Não é garantido pelo FGC<br><span class="tag-desvantagem">✗</span> Exige paciência e sangue-frio</td>
-            </tr>
-          </tbody>
+    <div class="card" style="margin-top:16px">
+      <h3><span class="dot"></span>Resultado final lado a lado</h3>
+      <div class="tabela-rolagem">
+        <table id="tabela-comp">
+          <thead><tr><th>Produto</th><th>Valor líquido</th><th>Rendimento</th><th>IR + taxas</th><th>Rentabilidade</th></tr></thead>
+          <tbody></tbody>
         </table>
       </div>
-      <p class="explicacao" style="margin-top:12px;">
-        <strong>Dica para o aluno:</strong> Repare que os produtos com maior potencial de retorno (FIIs e ETFs) são justamente os que têm mais desvantagens em relação à segurança. É por isso que o perfil do investidor importa!
-      </p>
+      <p class="dica" style="margin-top:12px" id="comp-nota-variavel" hidden>Produtos de renda variável seguem um cenário sorteado a cada clique em "Comparar!" — os resultados deles mudam a cada simulação.</p>
     </div>
   </div>
-</div>
+</section>
+<!-- ==================== ABA 3: PERFIL DO INVESTIDOR ==================== -->
+<section class="panel" id="painel-perfil" role="tabpanel" aria-labelledby="tab-perfil">
+  <h2 class="panel-titulo">Qual é o seu perfil?</h2>
+  <p class="panel-desc">Responda às perguntas com sinceridade — não existem respostas certas ou erradas! No final, você descobre o seu perfil de investidor e recebe dicas feitas para a sua realidade.</p>
 
+  <div class="aviso-privacidade">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    <p><strong>Suas respostas são só suas.</strong> Nada do que você responder sai do seu navegador — nem a escola, nem ninguém tem acesso. Nas perguntas sobre a sua família, você pode escolher "prefiro não responder" sempre que quiser.</p>
+  </div>
+
+  <form id="form-perfil" novalidate>
+    <h3 class="bloco-titulo"><span class="num">1</span>Meu perfil de risco</h3>
+    <p class="bloco-desc">Essas 5 perguntas mostram como você lida com risco e com o tempo.</p>
+
+    <fieldset class="pergunta">
+      <legend>1. Por quanto tempo você pretende deixar o dinheiro investido?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q1" value="1"> Menos de 1 ano</label>
+        <label class="opcao"><input type="radio" name="q1" value="2"> De 1 a 3 anos</label>
+        <label class="opcao"><input type="radio" name="q1" value="3"> Mais de 3 anos</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>2. Imagine que você investiu R$ 500 e, um mês depois, o valor caiu para R$ 400. O que você faria?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q2" value="1"> Tirava tudo na hora, antes de cair mais</label>
+        <label class="opcao"><input type="radio" name="q2" value="2"> Ficava preocupado, mas esperava recuperar</label>
+        <label class="opcao"><input type="radio" name="q2" value="3"> Via como oportunidade e investia mais</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>3. Você pode precisar desse dinheiro de uma hora para outra (uma emergência, por exemplo)?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q3" value="1"> Sim, posso precisar a qualquer momento</label>
+        <label class="opcao"><input type="radio" name="q3" value="2"> Talvez, mas provavelmente não</label>
+        <label class="opcao"><input type="radio" name="q3" value="3"> Não, posso deixar guardado por anos</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>4. Qual é o seu principal objetivo com esse dinheiro?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q4" value="1"> Ter uma reserva segura para emergências</label>
+        <label class="opcao"><input type="radio" name="q4" value="2"> Juntar para um objetivo (celular, curso, faculdade)</label>
+        <label class="opcao"><input type="radio" name="q4" value="3"> Fazer o dinheiro crescer o máximo possível no longo prazo</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>5. Quanto você já sabe sobre investimentos?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q5" value="1"> Nada ou quase nada — estou começando agora</label>
+        <label class="opcao"><input type="radio" name="q5" value="2"> Já entendo o básico (poupança, juros, imposto)</label>
+        <label class="opcao"><input type="radio" name="q5" value="3"> Já conheço vários produtos e seus riscos</label>
+      </div>
+    </fieldset>
+
+    <h3 class="bloco-titulo"><span class="num">2</span>Meu dinheiro e minha família</h3>
+    <p class="bloco-desc">Estas perguntas não mudam o seu perfil de risco — elas geram um "raio-x" dos seus hábitos, com dicas personalizadas. Todas podem ser puladas.</p>
+
+    <fieldset class="pergunta">
+      <legend>6. Qual é a faixa de renda da sua família?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q6" value="a"> Até 1 salário mínimo</label>
+        <label class="opcao"><input type="radio" name="q6" value="b"> De 1 a 3 salários mínimos</label>
+        <label class="opcao"><input type="radio" name="q6" value="c"> De 3 a 5 salários mínimos</label>
+        <label class="opcao"><input type="radio" name="q6" value="d"> Acima de 5 salários mínimos</label>
+        <label class="opcao"><input type="radio" name="q6" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>7. De onde vem o dinheiro que você usa no dia a dia?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q7" value="pe-de-meia"> Do programa Pé-de-Meia</label>
+        <label class="opcao"><input type="radio" name="q7" value="mesada"> Mesada ou dinheiro dos responsáveis</label>
+        <label class="opcao"><input type="radio" name="q7" value="trabalho"> Trabalho ou bicos</label>
+        <label class="opcao"><input type="radio" name="q7" value="nenhum"> Não recebo dinheiro próprio</label>
+        <label class="opcao"><input type="radio" name="q7" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>8. Quando chega o fim do mês, o que costuma acontecer com o seu dinheiro?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q8" value="nunca-sobra"> Nunca sobra nada</label>
+        <label class="opcao"><input type="radio" name="q8" value="gasto-tudo"> Até sobra, mas eu acabo gastando</label>
+        <label class="opcao"><input type="radio" name="q8" value="guarda-casa"> Guardo em casa (na carteira, na gaveta)</label>
+        <label class="opcao"><input type="radio" name="q8" value="guarda-conta"> Guardo em conta ou poupança</label>
+        <label class="opcao"><input type="radio" name="q8" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>9. Como a sua família costuma fazer compras grandes (geladeira, celular, móveis)?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q9" value="avista"> Junta o dinheiro e paga à vista</label>
+        <label class="opcao"><input type="radio" name="q9" value="cartao"> Parcela no cartão de crédito</label>
+        <label class="opcao"><input type="radio" name="q9" value="crediario"> Crediário ou carnê na loja</label>
+        <label class="opcao"><input type="radio" name="q9" value="emprestimo"> Pega empréstimo</label>
+        <label class="opcao"><input type="radio" name="q9" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>10. A sua família costuma guardar dinheiro ou tem uma reserva para emergências?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q10" value="sempre"> Sim, sempre</label>
+        <label class="opcao"><input type="radio" name="q10" value="asvezes"> Às vezes, quando dá</label>
+        <label class="opcao"><input type="radio" name="q10" value="nunca"> Não, nunca sobra</label>
+        <label class="opcao"><input type="radio" name="q10" value="x"> Não sei / prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>11. Você já conseguiu guardar dinheiro por 3 meses ou mais sem gastar?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q11" value="sim"> Sim, já consegui</label>
+        <label class="opcao"><input type="radio" name="q11" value="tentei"> Já tentei, mas não consegui</label>
+        <label class="opcao"><input type="radio" name="q11" value="nunca"> Nunca tentei</label>
+        <label class="opcao"><input type="radio" name="q11" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <fieldset class="pergunta">
+      <legend>12. Com que frequência você faz compras por impulso (delivery, jogos, aplicativos, roupas) e se arrepende depois?</legend>
+      <div class="opcoes">
+        <label class="opcao"><input type="radio" name="q12" value="frequente"> Com frequência</label>
+        <label class="opcao"><input type="radio" name="q12" value="asvezes"> Às vezes</label>
+        <label class="opcao"><input type="radio" name="q12" value="raramente"> Raramente ou nunca</label>
+        <label class="opcao"><input type="radio" name="q12" value="x"> Prefiro não responder</label>
+      </div>
+    </fieldset>
+
+    <div class="acoes-form">
+      <button type="submit" class="btn btn-primario">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
+        Descobrir meu perfil!
+      </button>
+      <button type="button" class="btn btn-contorno" id="btn-limpar-perfil">Limpar respostas</button>
+    </div>
+    <p class="erro-quiz" id="erro-quiz">Ops! Responda às 5 perguntas do Bloco 1 para descobrir o seu perfil. As do Bloco 2 são opcionais.</p>
+  </form>
+
+  <div class="resultado-perfil" id="resultado-perfil" aria-live="polite">
+    <div class="cartao-perfil" id="cartao-perfil">
+      <span class="rotulo">Seu perfil de investidor</span>
+      <h3 id="perfil-nome">—</h3>
+      <p id="perfil-descricao">—</p>
+      <span class="selo-perfil" id="perfil-sugestao">—</span>
+      <div class="acoes-form">
+        <button class="btn btn-acento" id="btn-simular-sugerido">Simular com o produto sugerido</button>
+      </div>
+    </div>
+
+    <h3 class="bloco-titulo"><span class="num">✦</span>Raio-X dos meus hábitos</h3>
+    <p class="bloco-desc" id="raiox-intro">Dicas feitas para você, com base nas suas respostas do Bloco 2.</p>
+    <div class="dicas" id="raiox-dicas"></div>
+  </div>
+</section>
+
+<!-- ==================== ABA 4: CONHEÇA OS PRODUTOS ==================== -->
+<section class="panel" id="painel-produtos" role="tabpanel" aria-labelledby="tab-produtos">
+  <h2 class="panel-titulo">Conheça os produtos</h2>
+  <p class="panel-desc">Cada produto tem um jeito de render, um nível de risco e regras diferentes. Não existe "o melhor" para todo mundo — existe o melhor para o seu objetivo e o seu perfil.</p>
+
+  <div class="grade-produtos" id="grade-produtos"></div>
+
+  <div class="glossario">
+    <h3 class="bloco-titulo"><span class="num">?</span>Mini-glossário</h3>
+    <details>
+      <summary>O que é o FGC?</summary>
+      <p>O <strong>Fundo Garantidor de Créditos</strong> é como um "seguro" dos bancos: se o banco quebrar, ele devolve o seu dinheiro até o limite de R$ 250 mil por CPF e por instituição. Poupança e CDB têm essa garantia. O Tesouro Direto não precisa dela, porque é garantido pelo próprio Governo Federal.</p>
+    </details>
+    <details>
+      <summary>O que é liquidez?</summary>
+      <p>Liquidez é a <strong>rapidez para transformar o investimento em dinheiro na mão</strong>. Poupança e Tesouro Selic têm liquidez diária: você resgata e o dinheiro cai na conta rapidinho. Já alguns CDBs só devolvem o dinheiro no vencimento — antes disso, ele fica "preso".</p>
+    </details>
+    <details>
+      <summary>O que é volatilidade?</summary>
+      <p>Volatilidade é o quanto o valor de um investimento <strong>sobe e desce</strong> com o tempo. A poupança quase não oscila: todo mês sobe um pouquinho. Ações e criptomoedas são uma montanha-russa: podem subir muito, mas também cair bastante. Risco maior pode trazer retorno maior — mas nunca é garantido.</p>
+    </details>
+    <details>
+      <summary>Como funciona o Imposto de Renda nos investimentos?</summary>
+      <p>Na renda fixa (CDB, Tesouro), o IR segue a <strong>tabela regressiva</strong>: quanto mais tempo o dinheiro fica investido, menor a alíquota — de 22,5% (até 6 meses) até 15% (acima de 2 anos). O imposto só incide sobre o <strong>rendimento</strong>, nunca sobre o que você depositou. A poupança é isenta de IR.</p>
+    </details>
+    <details>
+      <summary>O que são juros compostos?</summary>
+      <p>É o rendimento calculado <strong>sobre o saldo total</strong>, incluindo os rendimentos anteriores — "juros sobre juros". No começo a diferença parece pequena, mas com o tempo a curva acelera. É por isso que começar cedo, mesmo com pouco dinheiro, faz tanta diferença.</p>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <p><strong>Aviso importante:</strong> este é um simulador com fins exclusivamente didáticos, criado para o projeto de extensão "Economia no Ensino Médio". As taxas usadas são aproximações e os cenários de renda variável são sorteados pelo computador. Nada aqui é recomendação de investimento. Para investir de verdade, sendo menor de idade, converse com seus responsáveis e procure um banco ou corretora.</p>
+  <p class="creditos">Projeto Economia no Ensino Médio · Escola pública de Itabuna/BA · Taxas de referência: novembro/2026 (Selic 13,75% a.a.)</p>
+</footer>
 <script>
 /* ============================================================
-   CONTROLE DE ABAS
+   SIMULADOR DE INVESTIMENTOS — lógica completa em português,
+   comentada para uso didático em sala de aula.
+   Os alunos são incentivados a ler este código!
    ============================================================ */
-function trocarAba(nome, botao) {
-  document.querySelectorAll('.aba-conteudo').forEach(el => el.classList.remove('ativa'));
-  document.querySelectorAll('.aba-botao').forEach(el => el.classList.remove('ativa'));
-  document.getElementById('aba-' + nome).classList.add('ativa');
-  botao.classList.add('ativa');
-}
 
-/* ============================================================
-   PERFIL DO INVESTIDOR
-   ============================================================ */
-let perfilAtual = null;
-
-function calcularPerfil() {
-  const perguntas = ['p1', 'p2', 'p3', 'p4', 'p5'];
-  let soma = 0;
-  let todasRespondidas = true;
-
-  for (const p of perguntas) {
-    const marcada = document.querySelector(`input[name="${p}"]:checked`);
-    if (!marcada) { todasRespondidas = false; break; }
-    soma += parseInt(marcada.value);
+/* ---------- 1. OS PRODUTOS E SUAS TAXAS ----------
+   Cada produto tem um "tipo":
+   - "fixa": rende a mesma taxa todos os meses (previsível);
+   - "variavel": o rendimento de cada mês é SORTEADO, em torno de
+     uma média, com um "desvio" que mede o tamanho da oscilação.
+   Taxas de referência: novembro/2026 (Selic 13,75% a.a.).       */
+const PADRAO_PRODUTOS = {
+  poupanca: {
+    nome: "Poupança", tipo: "fixa",
+    taxaMes: 0.005,            // 0,5% ao mês + TR (TR ≈ 0)
+    irRegressivo: false,       // poupança é ISENTA de IR
+    irFixo: 0,
+    custodiaAno: 0,
+    cor: "#6DBA8D",
+    resumo: "O investimento mais famoso do Brasil. Rende pouquinho, mas é simples e segura.",
+    vantagens: ["Isenta de Imposto de Renda", "Garantida pelo FGC", "Pode resgatar a qualquer momento (liquidez diária)", "Não tem valor mínimo"],
+    cuidados: ["É a que rende MENOS: perde para quase todos os outros", "Só rende no 'aniversário' (se tirar antes de 1 mês, perde o rendimento)"]
+  },
+  cdb: {
+    nome: "CDB (100% do CDI)", tipo: "fixa",
+    taxaMes: 0.0107,           // CDI ≈ 13,65% a.a. ≈ 1,07% a.m.
+    irRegressivo: true,
+    irFixo: 0,
+    custodiaAno: 0,
+    cor: "#4F86BB",
+    resumo: "Você empresta dinheiro para o banco e ele te devolve com juros.",
+    vantagens: ["Rende mais que a poupança", "Garantido pelo FGC até R$ 250 mil", "Tem opções com resgate a qualquer momento"],
+    cuidados: ["Paga Imposto de Renda sobre o rendimento", "Alguns CDBs 'prendem' o dinheiro até o vencimento"]
+  },
+  tesouro: {
+    nome: "Tesouro Selic", tipo: "fixa",
+    taxaMes: 0.0107,           // acompanha a Selic
+    irRegressivo: true,
+    irFixo: 0,
+    custodiaAno: 0.002,        // taxa da B3: 0,20% ao ano sobre o saldo
+    cor: "#7E549F",
+    resumo: "Você empresta dinheiro para o Governo Federal. É considerado o investimento mais seguro do país.",
+    vantagens: ["O mais seguro do Brasil (garantia do Tesouro Nacional)", "Rende mais que a poupança", "Dá para começar com cerca de R$ 30", "Resgate rápido (liquidez diária)"],
+    cuidados: ["Paga Imposto de Renda sobre o rendimento", "Tem taxa de custódia da B3 (0,20% ao ano)"]
+  },
+  acoes: {
+    nome: "Fundo de Ações (Ibovespa)", tipo: "variavel",
+    mediaMes: 0.010,           // média esperada: 1,0% a.m.
+    desvioMes: 0.04,           // oscilação: 4% a.m.
+    irRegressivo: false,
+    irFixo: 0.15,
+    custodiaAno: 0,
+    cor: "#E48F15",
+    resumo: "Um 'pacote' com pedacinhos de várias empresas da Bolsa. Sobe e desce bastante no caminho.",
+    vantagens: ["No longo prazo, historicamente rende mais que a renda fixa", "Você vira 'sócio' de grandes empresas"],
+    cuidados: ["Pode dar PREJUÍZO em alguns meses (ou anos)", "Não tem garantia nenhuma: o valor oscila todo dia", "Exige paciência — não é para dinheiro de emergência"]
+  },
+  cripto: {
+    nome: "Criptomoeda (Bitcoin)", tipo: "variavel",
+    mediaMes: 0.015,           // média esperada: 1,5% a.m.
+    desvioMes: 0.10,           // oscilação ALTA: 10% a.m.
+    irRegressivo: false,
+    irFixo: 0.15,
+    custodiaAno: 0,
+    cor: "#EA5150",
+    resumo: "Dinheiro 100% digital. É a montanha-russa mais radical deste simulador.",
+    vantagens: ["Potencial de ganhos altos", "Funciona 24h por dia, sem banco no meio"],
+    cuidados: ["Oscila MUITO: quedas de 30% em um mês já aconteceram", "Não tem FGC, governo ou empresa garantindo nada", "É o produto mais arriscado da lista"]
   }
-
-  if (!todasRespondidas) {
-    alert('Responda todas as 5 perguntas para descobrir seu perfil!');
-    return;
-  }
-
-  let perfil, descricao, recomendacao, badgeClasse;
-  if (soma <= 8) {
-    perfil = 'Conservador'; badgeClasse = 'conservador';
-    descricao = 'Você prefere segurança e não gosta de ver o dinheiro oscilar. Prioriza manter o que já tem.';
-    recomendacao = 'A <strong>Poupança</strong> e o <strong>Tesouro Selic</strong> são boas opções para você: são seguros e fáceis de resgatar.';
-  } else if (soma <= 11) {
-    perfil = 'Moderado'; badgeClasse = 'moderado';
-    descricao = 'Você aceita um pouco de risco em troca de um rendimento melhor, mas sem exageros.';
-    recomendacao = 'O <strong>CDB</strong> e o <strong>Tesouro Selic</strong> são adequados. Você também pode começar a conhecer <strong>FIIs</strong> com uma parte pequena do dinheiro.';
-  } else {
-    perfil = 'Arrojado'; badgeClasse = 'arrojado';
-    descricao = 'Você tolera bem as oscilações e busca maior rentabilidade no longo prazo.';
-    recomendacao = 'Você pode explorar <strong>FIIs</strong> e <strong>ETFs de Ações</strong>, mas sempre começando com pouco e estudando bastante antes.';
-  }
-
-  perfilAtual = perfil;
-
-  document.getElementById('resultado-perfil').innerHTML = `
-    <div class="perfil-box">
-      <span class="badge ${badgeClasse}">${perfil}</span>
-      <h3>Seu perfil é: ${perfil}</h3>
-      <p>${descricao}</p>
-      <p><strong>Sugestão de investimento:</strong> ${recomendacao}</p>
-      <p style="margin-top:10px; font-size:0.85rem; color:#718096;">
-        Pontuação: ${soma} de 15. Quanto maior a pontuação, maior a tolerância ao risco.
-      </p>
-    </div>
-  `;
-
-  sugerirNoSimulador(perfil);
-}
-
-function sugerirNoSimulador(perfil) {
-  const produto = document.getElementById('produto');
-  const prazo   = document.getElementById('prazo');
-  const aviso   = document.getElementById('aviso-perfil');
-
-  if (perfil === 'Conservador') {
-    produto.value = 'poupanca'; prazo.value = 6;
-    aviso.innerHTML = '💡 <strong>Sugestão do seu perfil Conservador:</strong> comece com a Poupança por 6 meses. É simples e segura!';
-  } else if (perfil === 'Moderado') {
-    produto.value = 'tesouro'; prazo.value = 12;
-    aviso.innerHTML = '💡 <strong>Sugestão do seu perfil Moderado:</strong> experimente o Tesouro Selic por 12 meses. Bom equilíbrio entre segurança e rendimento.';
-  } else {
-    produto.value = 'fii'; prazo.value = 36;
-    aviso.innerHTML = '💡 <strong>Sugestão do seu perfil Arrojado:</strong> conheça os FIIs por 36 meses, mas lembre-se: o valor pode oscilar bastante!';
-  }
-  aviso.style.display = 'block';
-}
-
-/* ============================================================
-   SIMULADOR — PRODUTOS (AGORA COM FIIs E ETFs)
-   ============================================================ */
-const PRODUTOS = {
-  poupanca: { nome: 'Poupança', taxaMensal: 0.006, temIR: false, taxaCustodiaAnual: 0, volatilidade: 'Muito baixa' },
-  cdb:      { nome: 'CDB', taxaMensal: 0.009, temIR: true, taxaCustodiaAnual: 0, volatilidade: 'Baixa' },
-  tesouro:  { nome: 'Tesouro Selic', taxaMensal: 0.009, temIR: true, taxaCustodiaAnual: 0.002, volatilidade: 'Muito baixa' },
-  fii:      { nome: 'FIIs', taxaMensal: 0.008, temIR: true, taxaCustodiaAnual: 0, volatilidade: 'Média/Alta', isRendaVariavel: true },
-  etf:      { nome: 'ETF de Ações', taxaMensal: 0.010, temIR: true, taxaCustodiaAnual: 0, volatilidade: 'Alta', isRendaVariavel: true }
 };
 
-// IR para renda fixa (regressivo)
+/* Cópia de trabalho das taxas — o "modo professor" pode alterar.
+   Tentamos carregar ajustes salvos neste navegador (localStorage). */
+const PRODUTOS = JSON.parse(JSON.stringify(PADRAO_PRODUTOS));
+try {
+  const salvas = JSON.parse(localStorage.getItem("simTaxas") || "null");
+  if (salvas) for (const id in salvas) Object.assign(PRODUTOS[id] || {}, salvas[id]);
+} catch (e) { /* sem localStorage? segue com os padrões */ }
+
+/* ---------- 2. FERRAMENTAS DE MATEMÁTICA FINANCEIRA ---------- */
+
+// Formata números como dinheiro: 1234.5 -> "R$ 1.234,50"
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = v => BRL.format(v);
+
+/* Sorteia um número seguindo a "curva de sino" (distribuição normal),
+   com média 0 e desvio 1. Usamos a fórmula de Box-Muller:
+   pegamos dois sorteios uniformes e transformamos em normal. */
+function gaussiano() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();   // evita log(0)
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/* Tabela REGRESSIVA de IR da renda fixa:
+   quanto mais tempo investido, MENOS imposto sobre o rendimento. */
 function aliquotaIR(meses) {
-  if (meses <= 6)  return 0.225;
-  if (meses <= 12) return 0.20;
-  if (meses <= 24) return 0.175;
-  return 0.15;
+  if (meses <= 6)  return 0.225;  // até 6 meses:      22,5%
+  if (meses <= 12) return 0.20;   // de 7 a 12 meses:  20%
+  if (meses <= 24) return 0.175;  // de 13 a 24 meses: 17,5%
+  return 0.15;                    // acima de 24 meses: 15%
 }
 
-// IR para renda variável (15% sobre ganho de capital, simplificado)
-function aliquotaIRVariavel() { return 0.15; }
-
-let graficoAtual = null;
-
-function simular() {
-  const valorInicial = parseFloat(document.getElementById('valorInicial').value) || 0;
-  const aporteMensal = parseFloat(document.getElementById('aporteMensal').value) || 0;
-  const prazo        = parseInt(document.getElementById('prazo').value) || 1;
-  const chaveProduto = document.getElementById('produto').value;
-  const produto      = PRODUTOS[chaveProduto];
-
-  // Simulação principal (produto selecionado)
-  const resultado = calcularSimulacao(produto, valorInicial, aporteMensal, prazo);
-  mostrarResultados(resultado);
-  desenharGrafico(resultado.historicoInvestido, resultado.historicoSaldo, prazo);
-
-  // Comparativo com todos os produtos
-  gerarComparativo(valorInicial, aporteMensal, prazo);
+/* Calcula o IR sobre o rendimento (nunca sobre o que foi depositado!).
+   Sem lucro, sem imposto: se o rendimento foi negativo, o IR é zero. */
+function calcularIR(produto, rendimento, meses) {
+  if (rendimento <= 0) return { valor: 0, aliquota: 0 };
+  let aliq;
+  if (produto.tipo === "variavel") aliq = produto.irFixo;          // 15% fixo
+  else if (produto.irRegressivo)   aliq = aliquotaIR(meses);       // tabela regressiva
+  else                             aliq = 0;                       // poupança: isenta
+  return { valor: rendimento * aliq, aliquota: aliq };
 }
 
-function calcularSimulacao(produto, valorInicial, aporteMensal, prazo) {
-  const taxaMensal = produto.taxaMensal;
-  const custodiaMensal = produto.taxaCustodiaAnual / 12;
+/* ---------- 3. O CORAÇÃO DO SIMULADOR ----------
+   Convenção didática: o aporte entra no INÍCIO de cada mês e já
+   rende naquele mês. Mês 0 = só o valor inicial.
+   Na renda variável, cada mês tem uma taxa sorteada:
+   taxa do mês = média + desvio × (sorteio na curva de sino).     */
+function simular(produto, inicial, aporte, meses) {
+  const serie = [{ mes: 0, investido: inicial, saldo: inicial, rendMes: 0 }];
+  let saldo = inicial, investido = inicial, custodiaTotal = 0;
 
-  let saldo = valorInicial;
-  let totalInvestido = valorInicial;
-  const historicoInvestido = [valorInicial];
-  const historicoSaldo = [valorInicial];
+  for (let m = 1; m <= meses; m++) {
+    saldo += aporte;          // entra o aporte do mês
+    investido += aporte;
 
-  for (let mes = 1; mes <= prazo; mes++) {
-    saldo = saldo * (1 + taxaMensal);
-    if (custodiaMensal > 0) saldo -= saldo * custodiaMensal;
-    saldo += aporteMensal;
-    totalInvestido += aporteMensal;
-    historicoInvestido.push(totalInvestido);
-    historicoSaldo.push(saldo);
-  }
-
-  const rendimentoBruto = saldo - totalInvestido;
-  let imposto = 0;
-
-  if (produto.temIR && rendimentoBruto > 0) {
-    if (produto.isRendaVariavel) {
-      imposto = rendimentoBruto * aliquotaIRVariavel();
+    // Qual é a taxa deste mês?
+    let taxa;
+    if (produto.tipo === "variavel") {
+      taxa = produto.mediaMes + produto.desvioMes * gaussiano(); // sorteio!
     } else {
-      imposto = rendimentoBruto * aliquotaIR(prazo);
+      taxa = produto.taxaMes;                                   // fixa e previsível
     }
+
+    const rendMes = saldo * taxa;   // juros compostos: rende sobre TODO o saldo
+    saldo += rendMes;
+
+    // Taxa de custódia da B3 (só Tesouro): 0,20% ao ano -> dividimos por 12
+    if (produto.custodiaAno) {
+      const cust = saldo * produto.custodiaAno / 12;
+      saldo -= cust;
+      custodiaTotal += cust;
+    }
+
+    serie.push({ mes: m, investido, saldo, rendMes });
   }
 
-  const valorLiquido = saldo - imposto;
+  const rendBruto = saldo - investido;                    // lucro antes do IR
+  const ir = calcularIR(produto, rendBruto, meses);       // IR sobre o lucro
+  const liquido = saldo - ir.valor;                       // o que vai para o bolso
 
-  return {
-    produto: produto.nome,
-    totalInvestido,
-    rendimentoBruto,
-    imposto,
-    valorLiquido,
-    prazo,
-    historicoInvestido,
-    historicoSaldo,
-    isRendaVariavel: produto.isRendaVariavel || false
-  };
+  return { serie, investido, rendBruto, ir: ir.valor, aliquota: ir.aliquota,
+           custodiaTotal, liquido,
+           rentabilidade: investido > 0 ? (liquido - investido) / investido : 0 };
 }
 
-function mostrarResultados(r) {
-  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-  document.getElementById('resultados').innerHTML = `
-    <div class="resultado-item">
-      <div class="rotulo">Total investido</div>
-      <div class="valor">${fmt(r.totalInvestido)}</div>
-    </div>
-    <div class="resultado-item">
-      <div class="rotulo">Rendimento bruto</div>
-      <div class="valor">${fmt(r.rendimentoBruto)}</div>
-    </div>
-    <div class="resultado-item imposto">
-      <div class="rotulo">Imposto de Renda</div>
-      <div class="valor">${fmt(r.imposto)}</div>
-    </div>
-    <div class="resultado-item destaque">
-      <div class="rotulo">Valor líquido final</div>
-      <div class="valor">${fmt(r.valorLiquido)}</div>
-    </div>
-  `;
-
-  let explicacao = `Você investiu ${fmt(r.totalInvestido)} em <strong>${r.produto}</strong> por ${r.prazo} meses. `;
-  if (r.isRendaVariavel) {
-    explicacao += `Como é um produto de <strong>renda variável</strong>, o imposto é de 15% sobre o lucro (se houver). `;
-    explicacao += `⚠️ Mas atenção: na vida real, o valor pode oscilar bastante e o resultado pode ser diferente! `;
-  } else if (r.imposto > 0) {
-    const aliquota = aliquotaIR(r.prazo) * 100;
-    explicacao += `Como o prazo ficou na faixa de ${aliquota}% de IR, o governo ficou com ${fmt(r.imposto)} do rendimento. `;
-  } else {
-    explicacao += `A poupança é isenta de Imposto de Renda, então você fica com todo o rendimento! `;
+/* ---------- 4. ANIMAÇÃO DOS NÚMEROS (contador) ----------
+   Em vez de "pular" para o valor final, o número sobe contando,
+   como um painel de placar. Respeita prefers-reduced-motion.    */
+const reduzMovimento = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animarValor(el, alvo, formato) {
+  if (reduzMovimento) { el.textContent = formato(alvo); return; }
+  const inicio = performance.now(), dur = 700;
+  function passo(t) {
+    const p = Math.min((t - inicio) / dur, 1);
+    const suave = 1 - Math.pow(1 - p, 3);              // easing: desacelera no fim
+    el.textContent = formato(alvo * suave);
+    if (p < 1) requestAnimationFrame(passo);
   }
-  explicacao += `No fim, seu dinheiro virou ${fmt(r.valorLiquido)}.`;
-  document.getElementById('explicacao').innerHTML = explicacao;
+  requestAnimationFrame(passo);
 }
+</script>
+<script>
+/* ============================================================
+   PARTE 2 — INTERFACE: abas, botões, gráficos e questionário
+   ============================================================ */
 
-function desenharGrafico(investido, saldo, prazo) {
-  const ctx = document.getElementById('grafico').getContext('2d');
-  if (graficoAtual) graficoAtual.destroy();
-  const labels = Array.from({ length: prazo + 1 }, (_, i) => `Mês ${i}`);
-  graficoAtual = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Total investido (seu bolso)',
-          data: investido,
-          borderColor: '#718096',
-          backgroundColor: 'rgba(113,128,150,0.1)',
-          borderDash: [5, 5],
-          tension: 0,
-          pointRadius: 0
-        },
-        {
-          label: 'Saldo acumulado (com juros)',
-          data: saldo,
-          borderColor: '#2b6cb0',
-          backgroundColor: 'rgba(43,108,176,0.15)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        tooltip: {
-          callbacks: {
-            label: (item) => `${item.dataset.label}: ${item.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
-          }
-        }
-      },
-      scales: {
-        y: { ticks: { callback: (v) => 'R$ ' + v.toLocaleString('pt-BR') } }
-      }
+/* ---------- NAVEGAÇÃO POR ABAS ---------- */
+const tabBtns = [...document.querySelectorAll(".tab-btn")];
+function irParaAba(nome) {
+  document.body.dataset.tab = nome;
+  tabBtns.forEach(b => {
+    const ativo = b.dataset.tab === nome;
+    b.setAttribute("aria-selected", ativo);
+    document.getElementById("painel-" + b.dataset.tab).classList.toggle("ativo", ativo);
+  });
+  window.scrollTo({ top: 0, behavior: reduzMovimento ? "auto" : "smooth" });
+}
+tabBtns.forEach((b, i) => {
+  b.addEventListener("click", () => irParaAba(b.dataset.tab));
+  // setas do teclado navegam entre as abas (acessibilidade)
+  b.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      const prox = tabBtns[(i + dir + tabBtns.length) % tabBtns.length];
+      prox.focus(); prox.click();
     }
   });
+});
+
+/* ---------- AJUDANTES DE FORMULÁRIO ---------- */
+const $ = id => document.getElementById(id);
+const num = id => Math.max(0, parseFloat($(id).value) || 0);   // lê número >= 0
+function ligarSlider(rangeId, outId) {
+  const r = $(rangeId), o = $(outId);
+  const mostrar = () => o.textContent = r.value + (r.value == 1 ? " mês" : " meses");
+  r.addEventListener("input", mostrar); mostrar();
+  return () => parseInt(r.value, 10);
 }
+const lerPrazoSim = ligarSlider("sim-prazo-range", "sim-prazo-out");
+const lerPrazoComp = ligarSlider("comp-prazo-range", "comp-prazo-out");
 
-/* ============================================================
-   COMPARATIVO DE TODOS OS PRODUTOS
-   ============================================================ */
-function gerarComparativo(valorInicial, aporteMensal, prazo) {
-  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const container = document.getElementById('comparativo-grid');
-  container.innerHTML = '';
-
-  const chaves = ['poupanca', 'cdb', 'tesouro', 'fii', 'etf'];
-
-  chaves.forEach(chave => {
-    const produto = PRODUTOS[chave];
-    const r = calcularSimulacao(produto, valorInicial, aporteMensal, prazo);
-
-    // Calcula a "rentabilidade percentual" para comparar melhor
-    const rentabilidadePct = r.totalInvestido > 0
-      ? ((r.valorLiquido / r.totalInvestido - 1) * 100).toFixed(1)
-      : '0.0';
-
-    // Cria o card do comparativo
-    const card = document.createElement('div');
-    card.className = 'comp-card';
-    card.innerHTML = `
-      <h4>${produto.nome}</h4>
-      <div class="linha"><span>Risco:</span><span>${produto.volatilidade}</span></div>
-      <div class="linha"><span>Investido:</span><span>${fmt(r.totalInvestido)}</span></div>
-      <div class="linha"><span>Rendimento:</span><span>${fmt(r.rendimentoBruto)}</span></div>
-      <div class="linha"><span>IR:</span><span>${fmt(r.imposto)}</span></div>
-      <div class="destaque-comp">${fmt(r.valorLiquido)}</div>
-      <div style="font-size:0.8rem; color:#718096; margin-top:4px;">${rentabilidadePct}% de rentabilidade</div>
-    `;
-    container.appendChild(card);
-  });
+/* ---------- GRÁFICOS (Chart.js) ---------- */
+const temChart = typeof Chart !== "undefined";
+if (temChart) {
+  Chart.defaults.font.family = "'Manrope', sans-serif";
+  Chart.defaults.color = "#563E79";
 }
-
-/* ============================================================
-   INICIALIZAÇÃO
-   ============================================================ */
-window.onload = function() {
-  simular(); // Já roda uma simulação inicial
+let graficoSim = null, graficoComp = null;
+const opcoesGrafico = {
+  responsive: true, maintainAspectRatio: false,
+  interaction: { mode: "index", intersect: false },
+  plugins: { legend: { labels: { usePointStyle: true, pointStyle: "circle", padding: 16 } } },
+  scales: {
+    y: { ticks: { callback: v => "R$ " + (v >= 1000 ? (v / 1000).toLocaleString("pt-BR") + " mil" : v.toLocaleString("pt-BR")) },
+         grid: { color: "rgba(86,62,121,.08)" } },
+    x: { grid: { display: false } }
+  }
 };
+function desenharGrafico(canvasId, ref, datasets, labels) {
+  if (!temChart) return;
+  if (ref) ref.destroy();
+  const cfg = {
+    type: "line",
+    data: { labels, datasets },
+    options: opcoesGrafico
+  };
+  const novo = new Chart($(canvasId), cfg);
+  return novo;
+}
+
+/* ---------- ABA 1: SIMULADOR ---------- */
+const dicasProduto = {
+  poupanca: "Segura e isenta de IR, mas é a que rende menos.",
+  cdb: "Rende mais que a poupança. Paga IR regressivo.",
+  tesouro: "O mais seguro do país. IR regressivo + taxa da B3.",
+  acoes: "Renda variável: oscila bastante. Cada simulação é um cenário diferente!",
+  cripto: "A montanha-russa: pode subir muito... ou despencar."
+};
+$("sim-produto").addEventListener("change", e =>
+  $("sim-produto-dica").textContent = dicasProduto[e.target.value]);
+$("sim-produto-dica").textContent = dicasProduto[$("sim-produto").value];
+
+function rodarSimulacao() {
+  const prod = PRODUTOS[$("sim-produto").value];
+  const r = simular(prod, num("sim-inicial"), num("sim-aporte"), lerPrazoSim());
+
+  // mostra os cartões de resultado (com animação de contagem)
+  const caixa = $("sim-resultados");
+  caixa.classList.add("visivel");
+  animarValor($("r-investido"), r.investido, fmt);
+  animarValor($("r-rendimento"), r.rendBruto, fmt);
+  $("r-rendimento").classList.toggle("negativo", r.rendBruto < 0);
+  animarValor($("r-ir"), r.ir, fmt);
+  $("r-custodia-caixa").style.display = prod.custodiaAno ? "" : "none";
+  if (prod.custodiaAno) animarValor($("r-custodia"), r.custodiaTotal, fmt);
+  animarValor($("r-liquido"), r.liquido, fmt);
+  $("r-rentab").textContent = (r.rentabilidade * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
+  $("r-aliquota").textContent = r.aliquota ? (r.aliquota * 100).toLocaleString("pt-BR") + "% sobre o rendimento"
+                                           : "Isento";
+
+  // renda variável: mostra o aviso e o botão de sortear outro cenário
+  const ehVariavel = prod.tipo === "variavel";
+  $("sim-aviso-variavel").style.display = ehVariavel ? "flex" : "none";
+  $("sim-reroll-caixa").style.display = ehVariavel ? "flex" : "none";
+
+  // gráfico: linha reta = total investido; curva = saldo acumulado
+  const labels = r.serie.map(p => p.mes);
+  graficoSim = desenharGrafico("grafico-sim", graficoSim, [
+    { label: "Você depositou", data: r.serie.map(p => p.investido),
+      borderColor: "#84A59D", borderDash: [7, 5], pointRadius: 0, borderWidth: 2.5 },
+    { label: "Seu dinheiro acumulado", data: r.serie.map(p => p.saldo),
+      borderColor: prod.cor, backgroundColor: prod.cor + "22", fill: true,
+      pointRadius: 0, borderWidth: 3, tension: 0.3 }
+  ], labels);
+
+  // tabela mês a mês
+  $("tabela-sim").querySelector("tbody").innerHTML = r.serie.map(p =>
+    `<tr><td>${p.mes === 0 ? "Início" : "Mês " + p.mes}</td>
+     <td>${fmt(p.investido)}</td>
+     <td>${p.mes === 0 ? "—" : fmt(p.rendMes)}</td>
+     <td><strong>${fmt(p.saldo)}</strong></td></tr>`).join("");
+
+  caixa.classList.remove("animar"); void caixa.offsetWidth; caixa.classList.add("animar");
+  caixa.scrollIntoView({ behavior: reduzMovimento ? "auto" : "smooth", block: "start" });
+}
+$("btn-simular").addEventListener("click", rodarSimulacao);
+$("btn-reroll").addEventListener("click", rodarSimulacao);
+
+// Botão Pé-de-Meia: preenche com a realidade dos alunos (R$ 200/mês)
+$("btn-pe-de-meia").addEventListener("click", () => {
+  $("sim-inicial").value = 0;
+  $("sim-aporte").value = 200;
+  const r = $("sim-prazo-range"); r.value = 24; r.dispatchEvent(new Event("input"));
+  rodarSimulacao();
+});
+
+/* ---------- MODO PROFESSOR (taxas editáveis) ---------- */
+function montarModoProfessor() {
+  const grade = $("prof-grade");
+  grade.innerHTML = "";
+  const campos = [];
+  for (const id in PRODUTOS) {
+    const p = PRODUTOS[id];
+    if (p.tipo === "fixa") campos.push([id, "taxaMes", p.nome + " — taxa (% a.m.)", p.taxaMes * 100]);
+    else {
+      campos.push([id, "mediaMes", p.nome + " — média (% a.m.)", p.mediaMes * 100]);
+      campos.push([id, "desvioMes", p.nome + " — oscilação (% a.m.)", p.desvioMes * 100]);
+    }
+  }
+  for (const [id, prop, rotulo, valor] of campos) {
+    const div = document.createElement("div");
+    div.innerHTML = `<label for="prof-${id}-${prop}">${rotulo}</label>
+      <input type="number" step="0.01" id="prof-${id}-${prop}" value="${valor.toFixed(2)}">`;
+    div.querySelector("input").addEventListener("change", e => {
+      PRODUTOS[id][prop] = (parseFloat(e.target.value) || 0) / 100;   // % -> decimal
+      salvarTaxas();
+    });
+    grade.appendChild(div);
+  }
+}
+function salvarTaxas() {
+  const dados = {};
+  for (const id in PRODUTOS) {
+    const p = PRODUTOS[id];
+    dados[id] = p.tipo === "fixa" ? { taxaMes: p.taxaMes } : { mediaMes: p.mediaMes, desvioMes: p.desvioMes };
+  }
+  try { localStorage.setItem("simTaxas", JSON.stringify(dados)); } catch (e) {}
+}
+$("btn-restaurar").addEventListener("click", () => {
+  for (const id in PADRAO_PRODUTOS) {
+    const padrao = PADRAO_PRODUTOS[id];
+    if (padrao.tipo === "fixa") PRODUTOS[id].taxaMes = padrao.taxaMes;
+    else { PRODUTOS[id].mediaMes = padrao.mediaMes; PRODUTOS[id].desvioMes = padrao.desvioMes; }
+  }
+  try { localStorage.removeItem("simTaxas"); } catch (e) {}
+  montarModoProfessor();
+});
+montarModoProfessor();
+
+/* ---------- ABA 2: COMPARADOR ---------- */
+// monta as caixinhas de seleção dos produtos
+(function montarChecks() {
+  const caixa = $("comp-checks");
+  const marcados = ["poupanca", "cdb", "tesouro"];   // padrão: renda fixa
+  for (const id in PRODUTOS) {
+    const p = PRODUTOS[id];
+    const label = document.createElement("label");
+    label.className = "check-prod";
+    label.style.setProperty("--cor-prod", p.cor);
+    label.innerHTML = `<input type="checkbox" value="${id}" ${marcados.includes(id) ? "checked" : ""}>
+      <span class="bolinha"></span>${p.nome}`;
+    caixa.appendChild(label);
+  }
+})();
+$("btn-comp-pe-de-meia").addEventListener("click", () => {
+  $("comp-inicial").value = 0; $("comp-aporte").value = 200;
+  const r = $("comp-prazo-range"); r.value = 24; r.dispatchEvent(new Event("input"));
+});
+
+function rodarComparacao() {
+  const ids = [...$("comp-checks").querySelectorAll("input:checked")].map(c => c.value);
+  if (ids.length < 2) { alert("Escolha pelo menos 2 produtos para comparar!"); return; }
+
+  const inicial = num("comp-inicial"), aporte = num("comp-aporte"), meses = lerPrazoComp();
+  const resultados = ids.map(id => ({ id, prod: PRODUTOS[id], r: simular(PRODUTOS[id], inicial, aporte, meses) }));
+
+  $("comp-resultados").classList.add("visivel");
+  $("comp-nota-variavel").hidden = !ids.some(id => PRODUTOS[id].tipo === "variavel");
+
+  // gráfico: uma linha por produto + linha tracejada do total investido
+  const labels = resultados[0].r.serie.map(p => p.mes);
+  const datasets = [{
+    label: "Você depositou", data: resultados[0].r.serie.map(p => p.investido),
+    borderColor: "#8a8577", borderDash: [7, 5], pointRadius: 0, borderWidth: 2
+  }];
+  for (const { prod, r } of resultados) {
+    datasets.push({ label: prod.nome, data: r.serie.map(p => p.saldo),
+      borderColor: prod.cor, pointRadius: 0, borderWidth: 3, tension: 0.3 });
+  }
+  graficoComp = desenharGrafico("grafico-comp", graficoComp, datasets, labels);
+
+  // tabela lado a lado
+  $("tabela-comp").querySelector("tbody").innerHTML = resultados
+    .map(({ prod, r }) => `<tr>
+      <td><strong>${prod.nome}</strong></td>
+      <td><strong>${fmt(r.liquido)}</strong></td>
+      <td>${fmt(r.rendBruto)}</td>
+      <td>${fmt(r.ir + r.custodiaTotal)}</td>
+      <td>${(r.rentabilidade * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</td>
+    </tr>`).join("");
+
+  // quem ganhou? (maior valor líquido final)
+  const ordenado = [...resultados].sort((a, b) => b.r.liquido - a.r.liquido);
+  const v = ordenado[0];
+  let explicacao;
+  if (v.prod.tipo === "variavel") {
+    explicacao = `Neste cenário sorteado, <strong>${v.prod.nome}</strong> terminou na frente, com ${fmt(v.r.liquido)}. Mas atenção: em outro cenário o resultado pode ser bem diferente — clique em "Comparar!" de novo e veja!`;
+  } else if (ids.includes("poupanca") && v.id !== "poupanca") {
+    explicacao = `<strong>${v.prod.nome}</strong> venceu com ${fmt(v.r.liquido)}. A poupança não paga IR, mas mesmo assim ficou para trás: rendendo só 0,5% ao mês, o imposto dos concorrentes "custa" menos do que a diferença de rendimento.`;
+  } else {
+    explicacao = `<strong>${v.prod.nome}</strong> venceu com ${fmt(v.r.liquido)}. Repare que, com ${meses} meses, a alíquota de IR caiu para ${(v.r.aliquota * 100).toLocaleString("pt-BR")}% — no longo prazo, o imposto menor ajuda bastante!`;
+  }
+  $("comp-vencedor").innerHTML = "🏆 " + explicacao;
+  $("comp-vencedor").style.display = "";
+  $("comp-resultados").scrollIntoView({ behavior: reduzMovimento ? "auto" : "smooth", block: "start" });
+}
+$("btn-comparar").addEventListener("click", rodarComparacao);
+
+/* ---------- ABA 3: PERFIL DO INVESTIDOR ---------- */
+const PERFIS = {
+  conservador: {
+    nome: "Conservador", classe: "conservador",
+    descricao: "Você prefere segurança e previsibilidade: quer ver o dinheiro crescer sem sustos e poder resgatar quando precisar. Isso não é medo — é estratégia! O ideal é começar por produtos de renda fixa com resgate rápido.",
+    sugestao: "Sugestão: comece pelo Tesouro Selic ou por um CDB com liquidez diária",
+    produto: "tesouro"
+  },
+  moderador: {
+    nome: "Moderado", classe: "moderador",
+    descricao: "Você aceita um pouco de oscilação em troca de rendimento melhor, desde que a maior parte do dinheiro fique segura. Uma boa estratégia é manter a base em renda fixa e experimentar a renda variável com uma parte pequena.",
+    sugestao: "Sugestão: base no CDB ou Tesouro Selic + um pouquinho em Fundo de Ações",
+    produto: "cdb"
+  },
+  arrojado: {
+    nome: "Arrojado", classe: "arrojado",
+    descricao: "Você encara a montanha-russa da renda variável sem desespero e pensa no longo prazo. Isso abre espaço para ações e cripto — mas lembre: até os mais arrojados precisam de uma reserva segura para emergências!",
+    sugestao: "Sugestão: compare Fundo de Ações e Cripto no simulador — mas monte antes a sua reserva",
+    produto: "acoes"
+  }
+};
+
+/* Regras do "Raio-X dos hábitos": cada regra olha algumas respostas do
+   Bloco 2 e gera uma dica personalizada. Mostramos no máximo 3 dicas.  */
+function gerarDicas(q) {
+  const dicas = [];
+  if (q.q7 === "pe-de-meia")
+    dicas.push({ t: "Seus R$ 200 do Pé-de-Meia podem virar muito mais",
+      p: "Que tal guardar metade? R$ 100 por mês já faz diferença. Use o botão 'Simular com o Pé-de-Meia' na aba Simulador e veja quanto isso vira até a formatura!" });
+  if (q.q8 === "gasto-tudo" || q.q8 === "nunca-sobra")
+    dicas.push({ t: "O segredo é pagar a si mesmo primeiro",
+      p: "Assim que o dinheiro cair, separe uma parte ANTES de gastar — pode ser só R$ 20. O que fica para o fim do mês quase nunca sobra. Guardar no começo do mês funciona muito melhor." });
+  if (q.q9 === "crediario" || q.q9 === "emprestimo" || q.q9 === "cartao")
+    dicas.push({ t: "Juros: a favor ou contra você?",
+      p: "Crediário e carnê cobram juros altos — às vezes mais de 5% ao mês, enquanto a poupança paga 0,5%. Juntar para pagar à vista faz o juros trabalhar a SEU favor, e não contra a sua família. Compare as taxas na aba Simulador!" });
+  if (q.q10 === "nunca" || q.q10 === "asvezes")
+    dicas.push({ t: "Primeiro passo: a reserva de emergência",
+      p: "Antes de pensar em ações ou cripto, o ideal é juntar uma reserva em algo seguro e com resgate rápido, como a Poupança ou o Tesouro Selic. Ela evita que um imprevisto vire dívida." });
+  if (q.q11 === "tentei" || q.q11 === "nunca")
+    dicas.push({ t: "Aceite o desafio dos 3 meses",
+      p: "Guarde qualquer valor — mesmo pequeno — por 3 meses seguidos sem mexer. Criar o hábito importa mais do que a quantia. Depois dos 3 meses, aumente o desafio!" });
+  if (q.q12 === "frequente")
+    dicas.push({ t: "Use a regra das 48 horas",
+      p: "Antes de uma compra por impulso, espere 48 horas. Se a vontade continuar, tudo bem comprar — mas você vai descobrir que muita vontade simplesmente passa. Delivery e joguinhos são os maiores ralos de dinheiro!" });
+  if (q.q8 === "guarda-casa")
+    dicas.push({ t: "Dinheiro na gaveta está perdendo valor",
+      p: "Guardado em casa, o dinheiro não rende nada — e a inflação ainda corrói o valor dele. Na Poupança ou no Tesouro Selic, ele pelo menos cresce um pouquinho todo mês." });
+  if (q.q8 === "guarda-conta" || q.q11 === "sim")
+    dicas.push({ t: "Você já tem o hábito — agora potencialize",
+      p: "Quem já poupa está à frente da maioria! O próximo passo é fazer esse dinheiro render mais: compare Poupança, CDB e Tesouro Selic na aba Comparar e veja a diferença no longo prazo." });
+  if (dicas.length === 0)
+    dicas.push({ t: "Explore o simulador!",
+      p: "Você pulou as perguntas do Bloco 2, sem problemas. Explore as abas Simulador e Comparar para descobrir como o dinheiro cresce com os juros compostos." });
+  return dicas.slice(0, 3);
+}
+
+$("form-perfil").addEventListener("submit", e => {
+  e.preventDefault();
+  // Bloco 1 é obrigatório: soma os pesos das 5 respostas (1 a 3 cada)
+  let soma = 0, ok = true;
+  for (let i = 1; i <= 5; i++) {
+    const marcada = document.querySelector(`input[name="q${i}"]:checked`);
+    if (!marcada) { ok = false; break; }
+    soma += parseInt(marcada.value, 10);
+  }
+  $("erro-quiz").classList.toggle("visivel", !ok);
+  if (!ok) return;
+
+  const perfil = soma <= 8 ? PERFIS.conservador : soma <= 12 ? PERFIS.moderador : PERFIS.arrojado;
+
+  const cartao = $("cartao-perfil");
+  cartao.className = "cartao-perfil " + perfil.classe;
+  $("perfil-nome").textContent = perfil.nome;
+  $("perfil-descricao").textContent = perfil.descricao;
+  $("perfil-sugestao").textContent = perfil.sugestao;
+  $("btn-simular-sugerido").dataset.produto = perfil.produto;
+
+  // lê o Bloco 2 (opcional) e gera as dicas
+  const q = {};
+  for (let i = 6; i <= 12; i++) {
+    const m = document.querySelector(`input[name="q${i}"]:checked`);
+    q["q" + i] = m ? m.value : null;
+  }
+  $("raiox-dicas").innerHTML = gerarDicas(q).map(d => `
+    <div class="dica-card">
+      <span class="icone"><svg viewBox="0 0 24 24" fill="none" stroke="#563E79" stroke-width="2.4" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+      <div><h4>${d.t}</h4><p>${d.p}</p></div>
+    </div>`).join("");
+
+  const res = $("resultado-perfil");
+  res.classList.add("visivel");
+  res.classList.remove("animar"); void res.offsetWidth; res.classList.add("animar");
+  res.scrollIntoView({ behavior: reduzMovimento ? "auto" : "smooth", block: "start" });
+});
+
+$("btn-simular-sugerido").addEventListener("click", e => {
+  $("sim-produto").value = e.target.dataset.produto;
+  $("sim-produto").dispatchEvent(new Event("change"));
+  irParaAba("simulador");
+  rodarSimulacao();
+});
+$("btn-limpar-perfil").addEventListener("click", () => {
+  $("form-perfil").reset();
+  $("resultado-perfil").classList.remove("visivel");
+  $("erro-quiz").classList.remove("visivel");
+});
+
+/* ---------- ABA 4: CARTÕES DOS PRODUTOS ---------- */
+(function montarProdutos() {
+  $("grade-produtos").innerHTML = Object.values(PRODUTOS).map(p => {
+    const taxaTxt = p.tipo === "fixa"
+      ? `Simulado a ${(p.taxaMes * 100).toLocaleString("pt-BR")}% ao mês`
+      : `Média de ${(p.mediaMes * 100).toLocaleString("pt-BR")}% a.m., com oscilação`;
+    return `<article class="card-prod" style="--cor-prod:${p.cor}">
+      <h3>${p.nome}</h3>
+      <span class="tipo">${p.tipo === "fixa" ? "Renda fixa · previsível" : "Renda variável · oscila"}</span>
+      <p class="oquee">${p.resumo}</p>
+      <span class="taxa">${taxaTxt}</span>
+      <ul class="lista-vd">
+        ${p.vantagens.map(v => `<li class="vantagem"><span class="marca">✓</span>${v}</li>`).join("")}
+        ${p.cuidados.map(c => `<li class="cuidado"><span class="marca">!</span>${c}</li>`).join("")}
+      </ul>
+    </article>`;
+  }).join("");
+})();
+
+/* Se o Chart.js não carregar (sem internet), avisa no lugar do gráfico */
+if (!temChart) {
+  document.querySelectorAll(".grafico-caixa").forEach(g =>
+    g.innerHTML = '<p style="padding:20px;font-weight:700">⚠ O gráfico precisa de internet para carregar. Os valores numéricos abaixo continuam funcionando!</p>');
+}
 </script>
 </body>
 </html>
